@@ -12,13 +12,7 @@ First as usual we import the libraries we need for our classifier
 
 #Currently the Pytorch version 1.0 is stable and we even have better versions (when I recorded the video only 0.4.0 was stable)
 #!pip install torch==0.4.0 torchvision
-!pip install torch torchvision
-import torch
-print ("current pytorch version is: ", torch.__version__)
-!pip uninstall PIL
-!pip uninstall Pillow
-!pip install Pillow
-# we need pillow version of 5.3.0
+
 
 import PIL
 print ("current pillow version is: ", PIL.__version__)
