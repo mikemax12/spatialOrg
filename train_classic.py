@@ -24,6 +24,10 @@ import math
 from torch.optim.lr_scheduler import StepLR
 import torchvision.transforms as transforms
 
+import torch, gc
+gc.collect()
+torch.cuda.empty_cache()
+
 
 def get_params(train=False):
     parser = argparse.ArgumentParser(description='PyTorch Training')
