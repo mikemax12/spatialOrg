@@ -250,9 +250,6 @@ def train(epoch, net, optimizer, trainloader, device, args):
     for batch_idx, (img, target) in enumerate(prog_bar):
         img, target = img.cuda(), target.cuda()
 
-        if batch_idx>0:
-            break
-
         optimizer.zero_grad()
         bs = len(img)
 
