@@ -303,13 +303,18 @@ def validate(epoch, net, valloader, device, args):
     with torch.no_grad():
         for batch_idx, (img, target) in enumerate(prog_bar):
             img, target = img.cuda(), target.cuda()
-
+            
             bs = len(img)
 
             logits = net(img)
 
             loss = criterion(logits, target)
             pred_lbl = logits.argmax(1)
+            print("Targ, loss, logits")
+            print(target)
+            print(loss)
+            print(logits)
+            print(pred_lbl)
             correct += (pred_lbl == target).type(torch.float).sum()
             total += bs
 
