@@ -12,13 +12,13 @@ class ImageNetKaggle(Dataset):
         self.targets = []
         self.transform = transform
         self.syn_to_class = {}
-        with open(os.path.join(root, "imagenet_class_index.json"), "rb") as f:
+        with open(os.path.join("/shared/local_scratch/gpu1/c_mtmaxwel/ENETER/ILSRVC", "imagenet_class_index.json"), "rb") as f:
                     json_file = json.load(f)
                     for class_id, v in json_file.items():
                         self.syn_to_class[v[0]] = int(class_id)
-        with open(os.path.join(root, "ILSVRC2012_val_labels.json"), "rb") as f:
+        with open(os.path.join("/shared/local_scratch/gpu1/c_mtmaxwel/ENETER/ILSRVC", "ILSVRC2012_val_labels.json"), "rb") as f:
                     self.val_to_syn = json.load(f)
-        samples_dir = os.path.join(root, "ILSVRC/Data/CLS-LOC", split)
+        samples_dir = os.path.join("/shared/local_scratch/gpu1/c_mtmaxwel/ENETER/", "ILSVRC/Data/CLS-LOC", split)
         for entry in os.listdir(samples_dir):
             if split == "train":
                 syn_id = entry
