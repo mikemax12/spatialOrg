@@ -48,7 +48,7 @@ from torchvision import transforms
 import torch
 import torchvision
 from tqdm import tqdm
-model = torchvision.models.resnet50(weights="DEFAULT")
+model = torchvision.models.resnet18()
 model.eval().cuda()  # Needs CUDA, don't bother on CPUs
 mean = (0.485, 0.456, 0.406)
 std = (0.229, 0.224, 0.225)
