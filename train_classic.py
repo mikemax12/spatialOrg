@@ -251,36 +251,34 @@ def train(epoch, net, optimizer, trainloader, device, args):
     total = 0
 
     criterion = nn.CrossEntropyLoss()
-    for batch_idx, (img, target) in enumerate(prog_bar):
-        img, target = img.cuda(), target.cuda()
+    epochs = 100
+    for epoch in range(1, epochs + 1):
+        log = {'epoch': epoch}
 
-        optimizer.zero_grad()
-        bs = len(img)
+        # train the model
+        model.train()
+        result = train_epoch(epoch, model, train_dataloader, criterion, optimizer, lr_scheduler, train_metrics, device)
+        log.update(result)
 
-        logits = net(img)
+        # validate the model
+        model.eval()
+        result = valid_epoch(epoch, model, valid_dataloader, criterion, valid_metrics, device)
+        log.update(**{'val_' + k: v for k, v in result.items()})
 
-        loss = criterion(logits, target)
+        # best acc
+        best = False
+        if log['val_acc1'] > best_acc:
+            best_acc = log['val_acc1']
+            best = True
 
-        loss.backward()
+        # save model
+        save_model(config.checkpoint_dir, epoch, model, optimizer, lr_scheduler, device_ids, best)
 
-        optimizer.step()
+        # print logged informations to the screen
+        for key, value in log.items():
+            print('    {:15s}: {}'.format(str(key), value))
 
-        pred_lbl = logits.argmax(1)
-
-        correct += (pred_lbl == target).type(torch.float).sum()
-        total += bs
-
-        am_loss.update(loss.item())
-        am_acc.update(correct / total)
-
-        prog_bar.set_description(
-            "E{}/{}, loss:{:2.3f}, loss_aux:{:2.3f}, acc:{:2.2f}".format(
-                epoch, args.epochs, am_loss.avg, 0, correct * 100 / total))
-    prog_bar.close()
-
-    acc = correct * 100 / total
-
-    return acc, am_loss.avg
+    return best_acc
 
 
 def validate(epoch, net, valloader, device, args):
