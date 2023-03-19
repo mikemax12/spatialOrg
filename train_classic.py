@@ -320,7 +320,29 @@ def train(epoch, net, optimizer, trainloader, device, args):
     correct = 0
     total = 0
     
+    config = get_train_config()
+
+    # device
+    device, device_ids = setup_device(config.n_gpu)
+
+    # tensorboard
+    writer = TensorboardWriter(config.summary_dir, config.tensorboard)
+
+    # metric tracker
+    metric_names = ['loss', 'acc1', 'acc5']
+    train_metrics = MetricTracker(*[metric for metric in metric_names], writer=writer)
+    valid_metrics = MetricTracker(*[metric for metric in metric_names], writer=writer)
     
+    optimizer = torch.optim.SGD(
+        params=model.parameters(),
+        lr=config.lr,
+        weight_decay=config.wd,
+        momentum=0.9)
+    lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
+        optimizer=optimizer,
+        max_lr=config.lr,
+        pct_start=config.warmup_steps / config.train_steps,
+        total_steps=config.train_steps)
 
     criterion = nn.CrossEntropyLoss()
     epochs = 100
@@ -329,12 +351,12 @@ def train(epoch, net, optimizer, trainloader, device, args):
 
         # train the model
         
-        result = train_epoch(epoch, net, train_dataloader, criterion, optimizer, lr_scheduler, train_metrics, device)
+        result = train_epoch(epoch, net, train_loader, criterion, optimizer, lr_scheduler, train_metrics, device)
         log.update(result)
 
         # validate the model
         net.eval()
-        result = valid_epoch(epoch, net, valid_dataloader, criterion, valid_metrics, device)
+        result = valid_epoch(epoch, net, val_loader, criterion, valid_metrics, device)
         log.update(**{'val_' + k: v for k, v in result.items()})
 
         # best acc
