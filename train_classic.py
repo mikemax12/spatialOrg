@@ -234,6 +234,76 @@ def main(args):
 
         # scheduler.step()
 
+def train_epoch(epoch, model, data_loader, criterion, optimizer, lr_scheduler, metrics, device=torch.device('cpu')):
+    metrics.reset()
+
+    # training loop
+    for batch_idx, (batch_data, batch_target) in enumerate(data_loader):
+        batch_data = batch_data.to(device)
+        batch_target = batch_target.to(device)
+
+        optimizer.zero_grad()
+        batch_pred = model(batch_data)
+        loss = criterion(batch_pred, batch_target)
+        loss.backward()
+        optimizer.step()
+        lr_scheduler.step()
+
+        acc1, acc5 = accuracy(batch_pred, batch_target, topk=(1, 5))
+
+        metrics.writer.set_step((epoch - 1) * len(data_loader) + batch_idx)
+        metrics.update('loss', loss.item())
+        metrics.update('acc1', acc1.item())
+        metrics.update('acc5', acc5.item())
+
+        if batch_idx % 100 == 0:
+            print("Train Epoch: {:03d} Batch: {:05d}/{:05d} Loss: {:.4f} Acc@1: {:.2f}, Acc@5: {:.2f}"
+                    .format(epoch, batch_idx, len(data_loader), loss.item(), acc1.item(), acc5.item()))
+    return metrics.result()
+
+
+def valid_epoch(epoch, model, data_loader, criterion, metrics, device=torch.device('cpu')):
+    metrics.reset()
+    losses = []
+    acc1s = []
+    acc5s = []
+    # validation loop
+    with torch.no_grad():
+        for batch_idx, (batch_data, batch_target) in enumerate(data_loader):
+            batch_data = batch_data.to(device)
+            batch_target = batch_target.to(device)
+
+            batch_pred = model(batch_data)
+            loss = criterion(batch_pred, batch_target)
+            acc1, acc5 = accuracy(batch_pred, batch_target, topk=(1, 5))
+
+            losses.append(loss.item())
+            acc1s.append(acc1.item())
+            acc5s.append(acc5.item())
+
+    loss = np.mean(losses)
+    acc1 = np.mean(acc1s)
+    acc5 = np.mean(acc5s)
+    metrics.writer.set_step(epoch, 'valid')
+    metrics.update('loss', loss)
+    metrics.update('acc1', acc1)
+    metrics.update('acc5', acc5)
+    return metrics.result()
+
+
+def save_model(save_dir, epoch, model, optimizer, lr_scheduler, device_ids, best=False):
+    state = {
+        'epoch': epoch,
+        'state_dict': model.state_dict() if len(device_ids) <= 1 else model.module.state_dict(),
+        'optimizer': optimizer.state_dict(),
+        'lr_scheduler': lr_scheduler.state_dict(),
+    }
+    filename = str(save_dir + 'current.pth')
+    torch.save(state, filename)
+
+    if best:
+        filename = str(save_dir + 'best.pth')
+        torch.save(state, filename)
 
 def train(epoch, net, optimizer, trainloader, device, args):
     net.train()
@@ -249,6 +319,8 @@ def train(epoch, net, optimizer, trainloader, device, args):
 
     correct = 0
     total = 0
+    
+    
 
     criterion = nn.CrossEntropyLoss()
     epochs = 100
@@ -256,13 +328,13 @@ def train(epoch, net, optimizer, trainloader, device, args):
         log = {'epoch': epoch}
 
         # train the model
-        model.train()
-        result = train_epoch(epoch, model, train_dataloader, criterion, optimizer, lr_scheduler, train_metrics, device)
+        
+        result = train_epoch(epoch, net, train_dataloader, criterion, optimizer, lr_scheduler, train_metrics, device)
         log.update(result)
 
         # validate the model
-        model.eval()
-        result = valid_epoch(epoch, model, valid_dataloader, criterion, valid_metrics, device)
+        net.eval()
+        result = valid_epoch(epoch, net, valid_dataloader, criterion, valid_metrics, device)
         log.update(**{'val_' + k: v for k, v in result.items()})
 
         # best acc
@@ -272,7 +344,7 @@ def train(epoch, net, optimizer, trainloader, device, args):
             best = True
 
         # save model
-        save_model(config.checkpoint_dir, epoch, model, optimizer, lr_scheduler, device_ids, best)
+        save_model(config.checkpoint_dir, epoch, net, optimizer, lr_scheduler, device_ids, best)
 
         # print logged informations to the screen
         for key, value in log.items():
