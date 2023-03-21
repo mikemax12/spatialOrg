@@ -24,6 +24,15 @@ import math
 from torch.optim.lr_scheduler import StepLR
 import torchvision.transforms as transforms
 
+from torch.utils.data import DataLoader
+from torchvision import transforms
+import torch
+import torchvision
+from tqdm import tqdm
+import transformers
+from transformers import AutoImageProcessor, ViTForImageClassification
+import torch
+
 import torch, gc
 gc.collect()
 torch.cuda.empty_cache()
